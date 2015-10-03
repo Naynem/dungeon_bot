@@ -234,6 +234,69 @@ class Berserk(LevelPerk):
 		return msg
 
 
+""" Evade tree """
+class Dancer(LevelPerk):
+	name = "Dancer"
+	description = "Get an evade bonus when surrounded by 4 or more enemies. Dance is the first step to become a master killer."
+	priority = 0
+	requirements = {
+		"level": 5,
+		"has_perks": [],
+		"characteristics": {
+			"dextery": 6,
+		}
+	}
+
+	def on_round(self):
+		msg = ""
+		if self.host.event:
+			combat_event = self.host.event
+			if len([c for c in combat_event.turn_queue if c.__class__.__name__ != "Player" and not c.dead])>=4:
+				modifier = get_modifier_by_name("bonus", self, self.host, {"duration":1, "stats_change":{"evasion": "3d6"}})
+				mod_added = self.host.add_modifier(modifier)
+				if mod_added:
+					msg = "!!\t%s gains a 4d4 evasion bonus due to being surrounded by enemies.\n"%(self.host.name.capitalize())
+		return msg
+
+class Evader(LevelPerk):
+	name = "Evader"
+	description = "Gain ability Evader"
+	priority = 0
+	requirements = {
+		"level": 15,
+		"has_perks": ["Dancer"],
+		"characteristics": {
+			"dextery": 8
+		}
+	}
+
+	abilities_granted = ["evader"]
+	
+
+class FastAsWind(LevelPerk):
+	name = "Fast as Wind"
+	description = "Get a 3 percent chance to charge 1 energy every round. Be fast as wind!"
+	priority = 0
+	requirements = {
+		"level": 25,
+		"has_perks": ["Sweeper", "Deft", "Dancer", "Evader"],
+		"characteristics": {
+			"dextery": 12,
+		}
+	}
+
+	def on_round(self, ability_info):
+		if ability_info.use_info["energy_change"] < -1:
+			if random.randint(0, 100) < 3:
+				ability_info.inhibitor.energy += 1
+				ability_info.description += "!!\t%s recovers 1 energy!\n"%(ability_info.inhibitor.name.capitalize())
+				return ability_info
+		return ability_info
+
+
+#there are many ideas about evader class something with buckler and another stuff
+
+
 """ Damage Dealer tree """
 class Sweeper(LevelPerk):
 	name = "Sweeper"
@@ -363,6 +426,11 @@ level_perks_listing = {
 	"Legionaire": Legionaire,
 	"Knight": Knight,
 	"Berserk": Berserk,
+	
+	#evade tree
+	"Dancer": Dancer,
+	"Evader": Evader,
+	"FastAsWind": FastAsWind,
 
 	#general tree
 	"Team tactics": TeamTactics,
